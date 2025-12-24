@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import html2canvas from 'html2canvas';
 import { Fortune, getRandomFortune, getCategoryColor } from '@/data/fortunes';
 
 type Step = 'landing' | 'payment' | 'result';
@@ -70,45 +69,71 @@ export default function Home() {
     setIsSaving(true);
 
     try {
+      // html2canvas 동적 import (클라이언트에서만 실행)
+      const html2canvas = (await import('html2canvas')).default;
+
       // 잠시 shimmer 효과 숨기기
       const shimmer = cardRef.current.querySelector('.shimmer-bg') as HTMLElement;
       if (shimmer) shimmer.style.display = 'none';
 
       const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: '#fff',
+        backgroundColor: '#ffffff',
         scale: 2,
         useCORS: true,
         allowTaint: true,
-        logging: false,
+        logging: true,
+        windowWidth: cardRef.current.scrollWidth,
+        windowHeight: cardRef.current.scrollHeight,
       });
 
       // shimmer 복원
       if (shimmer) shimmer.style.display = '';
 
-      // 모바일/데스크톱 모두 지원
-      const dataUrl = canvas.toDataURL('image/png');
-
-      // iOS Safari 대응
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-
-      if (isIOS) {
-        // iOS에서는 새 탭에서 이미지 열기
-        const newWindow = window.open();
-        if (newWindow) {
-          newWindow.document.write(`<img src="${dataUrl}" style="max-width:100%"/>`);
-          newWindow.document.title = '2026 럭키픽 - 길게 눌러서 저장하세요';
+      // Blob으로 변환 후 다운로드 (더 안정적)
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          alert('이미지 생성에 실패했습니다.');
+          setIsSaving(false);
+          return;
         }
-      } else {
-        // 일반 브라우저
-        const link = document.createElement('a');
-        link.download = `2026-럭키픽-${fortune.id}.png`;
-        link.href = dataUrl;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
 
-      fireConfetti();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `2026-럭키픽-${fortune.id}.png`;
+
+        // iOS Safari 대응
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+        if (isIOS) {
+          // iOS에서는 새 창에서 이미지 표시
+          const newWindow = window.open();
+          if (newWindow) {
+            newWindow.document.write(`
+              <html>
+                <head><title>2026 럭키픽 - 길게 눌러서 저장</title></head>
+                <body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#f5f5f5;">
+                  <img src="${url}" style="max-width:100%;height:auto;"/>
+                </body>
+              </html>
+            `);
+          } else {
+            // 팝업 차단된 경우
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }
+        } else {
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+
+        URL.revokeObjectURL(url);
+        fireConfetti();
+      }, 'image/png', 1.0);
+
     } catch (error) {
       console.error('Image save failed:', error);
       alert('이미지 저장에 실패했습니다. 스크린샷을 이용해주세요.');
@@ -346,13 +371,13 @@ export default function Home() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
-        className="absolute bottom-4 flex flex-col items-center"
+        className="absolute bottom-6 flex flex-col items-center"
       >
         <a
           href="https://instagram.com/socialjung"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-gray-400 text-sm hover:text-pink-500 transition-colors"
+          className="text-gray-500 text-base font-medium underline underline-offset-4 decoration-pink-300 hover:text-pink-500 hover:decoration-pink-500 transition-colors"
         >
           Made by SOO
         </a>
