@@ -167,8 +167,6 @@ export default function Home() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
-      fireConfetti();
     } catch (error) {
       console.error('Image save failed:', error);
       alert('이미지 저장에 실패했습니다.');
