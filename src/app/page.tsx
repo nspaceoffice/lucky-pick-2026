@@ -152,7 +152,12 @@ export default function Home() {
       ctx.fillStyle = '#999999';
       ctx.font = '14px Pretendard, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('2026 럭키 픽 🐴', width/2, height - 40);
+      ctx.fillText('2026 럭키 픽 🐴', width/2, height - 55);
+
+      // Made by SOO
+      ctx.fillStyle = '#aaaaaa';
+      ctx.font = '12px Pretendard, sans-serif';
+      ctx.fillText('Made by SOO', width/2, height - 30);
 
       // 이미지 다운로드
       const dataUrl = canvas.toDataURL('image/png');
