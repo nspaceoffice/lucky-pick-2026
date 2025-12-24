@@ -70,20 +70,48 @@ export default function Home() {
     setIsSaving(true);
 
     try {
+      // 잠시 shimmer 효과 숨기기
+      const shimmer = cardRef.current.querySelector('.shimmer-bg') as HTMLElement;
+      if (shimmer) shimmer.style.display = 'none';
+
       const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: '#fef7f0',
+        backgroundColor: '#fff',
         scale: 2,
         useCORS: true,
+        allowTaint: true,
+        logging: false,
       });
 
-      const link = document.createElement('a');
-      link.download = `2026-럭키픽-${fortune.id}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      // shimmer 복원
+      if (shimmer) shimmer.style.display = '';
+
+      // 모바일/데스크톱 모두 지원
+      const dataUrl = canvas.toDataURL('image/png');
+
+      // iOS Safari 대응
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+      if (isIOS) {
+        // iOS에서는 새 탭에서 이미지 열기
+        const newWindow = window.open();
+        if (newWindow) {
+          newWindow.document.write(`<img src="${dataUrl}" style="max-width:100%"/>`);
+          newWindow.document.title = '2026 럭키픽 - 길게 눌러서 저장하세요';
+        }
+      } else {
+        // 일반 브라우저
+        const link = document.createElement('a');
+        link.download = `2026-럭키픽-${fortune.id}.png`;
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
 
       fireConfetti();
     } catch (error) {
       console.error('Image save failed:', error);
+      alert('이미지 저장에 실패했습니다. 스크린샷을 이용해주세요.');
     }
 
     setIsSaving(false);
@@ -296,7 +324,7 @@ export default function Home() {
                     저장 중...
                   </span>
                 ) : (
-                  '📥 이미지 저장하기'
+                  '📥 이미지로 저장'
                 )}
               </motion.button>
 
