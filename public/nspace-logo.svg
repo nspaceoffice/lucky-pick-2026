@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50">
+  <defs>
+    <style>
+      .orange { fill: #f26522; }
+      .dot { fill: #5c6378; }
+    </style>
+  </defs>
+  <!-- Dot on N -->
+  <circle class="dot" cx="20" cy="8" r="5"/>
+  <!-- N -->
+  <text x="0" y="40" class="orange" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="36">N</text>
+  <!-- SPACE -->
+  <text x="28" y="40" class="orange" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="36">SPACE</text>
+</svg>
