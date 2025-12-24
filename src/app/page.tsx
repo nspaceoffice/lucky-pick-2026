@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { Fortune, getRandomFortune, getCategoryColor } from '@/data/fortunes';
@@ -13,7 +13,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -64,79 +63,110 @@ export default function Home() {
   };
 
   const handleSaveImage = async () => {
-    if (!cardRef.current || !fortune) return;
+    if (!fortune) return;
 
     setIsSaving(true);
 
     try {
-      // html2canvas 동적 import (클라이언트에서만 실행)
-      const html2canvas = (await import('html2canvas')).default;
+      // Canvas로 직접 카드 그리기
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas not supported');
 
-      // 잠시 shimmer 효과 숨기기
-      const shimmer = cardRef.current.querySelector('.shimmer-bg') as HTMLElement;
-      if (shimmer) shimmer.style.display = 'none';
+      // 카드 크기 설정
+      const width = 600;
+      const height = 700;
+      canvas.width = width;
+      canvas.height = height;
 
-      const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        logging: true,
-        windowWidth: cardRef.current.scrollWidth,
-        windowHeight: cardRef.current.scrollHeight,
-      });
+      // 배경 그라데이션
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
+      gradient.addColorStop(0, '#ffffff');
+      gradient.addColorStop(1, '#ffeef8');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
 
-      // shimmer 복원
-      if (shimmer) shimmer.style.display = '';
+      // 둥근 테두리 효과
+      ctx.strokeStyle = '#ffb6c1';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(10, 10, width - 20, height - 20, 20);
+      ctx.stroke();
 
-      // Blob으로 변환 후 다운로드 (더 안정적)
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          alert('이미지 생성에 실패했습니다.');
-          setIsSaving(false);
-          return;
-        }
+      // 카테고리 뱃지 배경
+      const categoryColors: Record<string, string> = {
+        idiom: '#f59e0b',
+        bible: '#3b82f6',
+        talmud: '#10b981',
+        korean: '#ec4899',
+        modern: '#8b5cf6',
+      };
+      ctx.fillStyle = categoryColors[fortune.category] || '#ec4899';
+      ctx.beginPath();
+      ctx.roundRect(width/2 - 60, 40, 120, 32, 16);
+      ctx.fill();
 
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `2026-럭키픽-${fortune.id}.png`;
+      // 카테고리 텍스트
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 14px Pretendard, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(fortune.categoryLabel, width/2, 62);
 
-        // iOS Safari 대응
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      // 이모지
+      ctx.font = '80px serif';
+      ctx.fillText(fortune.emoji, width/2, 170);
 
-        if (isIOS) {
-          // iOS에서는 새 창에서 이미지 표시
-          const newWindow = window.open();
-          if (newWindow) {
-            newWindow.document.write(`
-              <html>
-                <head><title>2026 럭키픽 - 길게 눌러서 저장</title></head>
-                <body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#f5f5f5;">
-                  <img src="${url}" style="max-width:100%;height:auto;"/>
-                </body>
-              </html>
-            `);
-          } else {
-            // 팝업 차단된 경우
-            link.target = '_blank';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          }
+      // 제목
+      ctx.fillStyle = '#1a1a2e';
+      ctx.font = 'bold 24px Pretendard, sans-serif';
+      ctx.fillText(fortune.title, width/2, 240);
+
+      // 메시지 (줄바꿈 처리)
+      ctx.fillStyle = '#555555';
+      ctx.font = '18px Pretendard, sans-serif';
+      const words = fortune.message.split(' ');
+      let line = '';
+      let y = 300;
+      const maxWidth = width - 80;
+
+      for (const word of words) {
+        const testLine = line + word + ' ';
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && line !== '') {
+          ctx.fillText(line.trim(), width/2, y);
+          line = word + ' ';
+          y += 30;
         } else {
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+          line = testLine;
         }
+      }
+      ctx.fillText(line.trim(), width/2, y);
 
-        URL.revokeObjectURL(url);
-        fireConfetti();
-      }, 'image/png', 1.0);
+      // 번호
+      ctx.fillStyle = '#ffb6c1';
+      ctx.font = 'bold 16px Pretendard, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(`#${fortune.id}`, width - 40, 60);
 
+      // 하단 로고
+      ctx.fillStyle = '#999999';
+      ctx.font = '14px Pretendard, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('2026 럭키 픽 🐴', width/2, height - 40);
+
+      // 이미지 다운로드
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `2026-럭키픽-${fortune.id}.png`;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      fireConfetti();
     } catch (error) {
       console.error('Image save failed:', error);
-      alert('이미지 저장에 실패했습니다. 스크린샷을 이용해주세요.');
+      alert('이미지 저장에 실패했습니다.');
     }
 
     setIsSaving(false);
@@ -297,7 +327,6 @@ export default function Home() {
             </h2>
 
             <motion.div
-              ref={cardRef}
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.5 }}
