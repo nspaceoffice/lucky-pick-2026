@@ -13,6 +13,7 @@ export default function Home() {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -67,6 +68,7 @@ export default function Home() {
     if (!email || !fortune) return;
 
     setIsLoading(true);
+    setEmailError(null);
 
     try {
       const response = await fetch('/api/send-email', {
@@ -75,11 +77,17 @@ export default function Home() {
         body: JSON.stringify({ email, fortune }),
       });
 
-      if (response.ok) {
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         setEmailSent(true);
+        fireConfetti();
+      } else {
+        setEmailError(data.error || '이메일 전송에 실패했습니다.');
       }
     } catch (error) {
       console.error('Email sending failed:', error);
+      setEmailError('네트워크 오류가 발생했습니다.');
     }
 
     setIsLoading(false);
@@ -90,6 +98,7 @@ export default function Home() {
     setFortune(null);
     setEmail('');
     setEmailSent(false);
+    setEmailError(null);
   };
 
   if (!mounted) return null;
@@ -320,8 +329,14 @@ export default function Home() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="이메일 주소를 입력하세요"
-                  className="email-input w-full mb-6"
+                  className="email-input w-full mb-4"
                 />
+
+                {emailError && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-500 text-sm">
+                    {emailError}
+                  </div>
+                )}
 
                 <motion.button
                   onClick={handleSendEmail}
