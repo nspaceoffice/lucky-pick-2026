@@ -16,6 +16,19 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
+
+    // 방문자 추적
+    const trackVisitor = async () => {
+      try {
+        await fetch('/api/analytics/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+      } catch (error) {
+        console.error('Tracking error:', error);
+      }
+    };
+    trackVisitor();
   }, []);
 
   const fireConfetti = () => {
