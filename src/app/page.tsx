@@ -5,11 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { Fortune, getRandomFortune, getCategoryColor } from '@/data/fortunes';
 
-type Step = 'landing' | 'payment' | 'result';
+type Step = 'landing' | 'name' | 'result';
 
 export default function Home() {
   const [step, setStep] = useState<Step>('landing');
   const [fortune, setFortune] = useState<Fortune | null>(null);
+  const [userName, setUserName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -59,10 +60,12 @@ export default function Home() {
     }());
   };
 
-  const handlePayment = async () => {
+  const handleGetFortune = async () => {
+    if (!userName.trim()) return;
+
     setIsLoading(true);
 
-    // 결제 시뮬레이션 (실제로는 토스 페이먼츠 SDK 사용)
+    // 덕담 뽑기 애니메이션
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     // 랜덤 덕담 선택
@@ -88,7 +91,7 @@ export default function Home() {
 
       // 카드 크기 설정
       const width = 600;
-      const height = 700;
+      const height = 750;
       canvas.width = width;
       canvas.height = height;
 
@@ -161,6 +164,12 @@ export default function Home() {
       ctx.textAlign = 'right';
       ctx.fillText(`#${fortune.id}`, width - 40, 60);
 
+      // 사용자 이름
+      ctx.fillStyle = '#ec4899';
+      ctx.font = 'bold 16px Pretendard, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${userName}님의 2026년 덕담`, width/2, height - 80);
+
       // 하단 로고
       ctx.fillStyle = '#999999';
       ctx.font = '14px Pretendard, sans-serif';
@@ -175,7 +184,7 @@ export default function Home() {
       // 이미지 다운로드
       const dataUrl = canvas.toDataURL('image/png');
       const link = document.createElement('a');
-      link.download = `2026-럭키픽-${fortune.id}.png`;
+      link.download = `2026-럭키픽-${userName}.png`;
       link.href = dataUrl;
       document.body.appendChild(link);
       link.click();
@@ -189,7 +198,7 @@ export default function Home() {
   };
 
   const handleRetry = () => {
-    setStep('landing');
+    setStep('name');
     setFortune(null);
   };
 
@@ -251,48 +260,48 @@ export default function Home() {
             </div>
 
             <motion.button
-              onClick={() => setStep('payment')}
+              onClick={() => setStep('name')}
               className="lucky-button text-xl"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
               🎰 덕담 뽑으러 가기
             </motion.button>
-
-            <p className="text-gray-400 text-sm mt-4">
-              복채 1,000원 (테스트 모드)
-            </p>
           </motion.div>
         )}
 
-        {/* Payment Step */}
-        {step === 'payment' && (
+        {/* Name Input Step */}
+        {step === 'name' && (
           <motion.div
-            key="payment"
+            key="name"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             className="fortune-card p-8 max-w-md w-full z-10"
           >
             <div className="text-center">
-              <div className="text-6xl mb-4 animate-bounce-gentle">💸</div>
-              <h2 className="text-2xl font-bold mb-2 text-gray-800">복채 내기</h2>
+              <div className="text-6xl mb-4 animate-bounce-gentle">✍️</div>
+              <h2 className="text-2xl font-bold mb-2 text-gray-800">이름을 알려주세요</h2>
               <p className="text-gray-500 mb-6">
-                정성스러운 복채로<br />
-                더 좋은 덕담이 찾아와요!
+                당신만을 위한 특별한 덕담을<br />
+                준비할게요!
               </p>
 
-              <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl p-6 mb-6">
-                <p className="text-3xl font-bold text-pink-500 mb-2">1,000원</p>
-                <p className="text-sm text-gray-500">테스트 결제 (실제 결제 X)</p>
-              </div>
+              <input
+                type="text"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                placeholder="이름을 입력하세요"
+                className="w-full px-6 py-4 rounded-2xl border-2 border-pink-200 focus:border-pink-400 focus:outline-none text-center text-lg mb-6 bg-white/50"
+                onKeyDown={(e) => e.key === 'Enter' && handleGetFortune()}
+              />
 
               <motion.button
-                onClick={handlePayment}
-                disabled={isLoading}
+                onClick={handleGetFortune}
+                disabled={isLoading || !userName.trim()}
                 className="lucky-button w-full mb-4 disabled:opacity-50"
-                whileHover={{ scale: isLoading ? 1 : 1.02 }}
-                whileTap={{ scale: isLoading ? 1 : 0.98 }}
+                whileHover={{ scale: isLoading || !userName.trim() ? 1 : 1.02 }}
+                whileTap={{ scale: isLoading || !userName.trim() ? 1 : 0.98 }}
               >
                 {isLoading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -305,7 +314,7 @@ export default function Home() {
                     운명을 읽는 중...
                   </span>
                 ) : (
-                  '💳 토스로 결제하기'
+                  '🎴 덕담 뽑기'
                 )}
               </motion.button>
 
@@ -339,7 +348,7 @@ export default function Home() {
             </motion.div>
 
             <h2 className="text-2xl font-bold text-gray-800 mb-6">
-              당신의 2026년 덕담
+              <span className="text-pink-500">{userName}</span>님의 2026년 덕담
             </h2>
 
             <motion.div
